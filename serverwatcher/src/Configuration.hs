@@ -6,7 +6,7 @@ module Configuration
 import System.IO
 
 
-data Configuration = {
+data Configuration = Configuration {
                        serverPath  :: String
                      , serverName  :: String
                      , printTime   :: Bool

@@ -9,26 +9,22 @@ import Control.Concurrent
 import System.IO
     
 import Terminal
-import Interrupt
 
 
-startServer :: String -> IO((ProcessHandle, Maybe Handle))
+startServer :: String -> IO(ProcessHandle)
 startServer path = do {
-                      (stdin,_,_,ph) <- createProcess $ (shell path) { std_in = CreatePipe, detach_console = True };
-                      return (ph,stdin)          
+                      (_,_,_,ph) <- createProcess $ (shell path) { detach_console = True };
+                      return ph        
                    }
                    
                    
-startServerChecked :: String -> IO(Maybe((ProcessHandle, Handle)))
+startServerChecked :: String -> IO(Maybe(ProcessHandle))
 startServerChecked path = do {
-                            (ph, stdin) <- startServer path;
-                            case stdin of
-                              (Just stdin') -> do
-                                                ec <- getProcessExitCode ph;
-                                                case ec of
-                                                  (Just _) -> return Nothing;
-                                                  (Nothing) -> return $ Just (ph,stdin')
-                              (Nothing) -> return Nothing                           
+                            ph <- startServer path;
+                            ec <- getProcessExitCode ph;
+                            case ec of
+                              (Just _) -> return Nothing;
+                              (Nothing) -> return $ Just ph                         
                           }  
                           
                           
@@ -43,17 +39,16 @@ observeMsgBase :: (MessageType -> String -> IO()) -> Int -> IO()
 observeMsgBase f x = f (InProgress Yellow x) "Observing process.."
 
     
-observeProcess :: String -> ProcessHandle -> Handle -> IO ()
-observeProcess s ph out = do
-                           setHandler ph out
-                           postObserveMsg
-                           observeProcess' s ph 0
+observeProcess :: String -> ProcessHandle -> IO ()
+observeProcess s ph = do
+                       postObserveMsg
+                       observeProcess' s ph 0
 
 observeProcess' :: String -> ProcessHandle -> Int -> IO ()
 observeProcess' s ph x = do {                   
                            ec <- getProcessExitCode ph;
                            case ec of
-                             (Just _)  -> clearHandler >> handleTermination s;
+                             (Just _)  -> handleTermination s;
                              (Nothing) -> do {
                                             updateObserveMsg x;
                                             threadDelay 100000;
@@ -67,7 +62,7 @@ handleServerStart s = do {
                         ph <- startServerChecked s;
                         case ph of
                           (Nothing) -> postMessage Failure "Failed to start server!" >> exitFailure;
-                          (Just (ph',out)) -> postMessage Success "Server started" >> observeProcess s ph' out
+                          (Just ph') -> postMessage Success "Server started" >> observeProcess s ph'
                       }
                      
                      
