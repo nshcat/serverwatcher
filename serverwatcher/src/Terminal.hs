@@ -1,5 +1,6 @@
 module Terminal
     ( MessageType (..)
+    , module System.Console.ANSI -- TODO: find way to only export color constructors
     , postMessage
     , updateMessage
     ) where

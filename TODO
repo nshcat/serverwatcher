@@ -1,0 +1,7 @@
+- on CTRL+C send save-all to the server
+- use one configuration record that will be passed around instead of the single string
+- add option to print time and date in messages. (Own set of overloads, postMessageTS, or boolean?)
+- implement the multi-colored effect in InProgress
+- clean up source files
+- comment
+- support server name as command line argument. Display it in the terminal title
