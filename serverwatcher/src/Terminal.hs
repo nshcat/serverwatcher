@@ -6,6 +6,8 @@ module Terminal
     ) where
 
 import System.Console.ANSI
+import Data.Time
+import Control.Monad
 
 
 data MessageType = Info | Success | Failure | InProgress Color Int
@@ -38,37 +40,53 @@ inProgressText x = states !! x'
                                              postfix  = replicate (5 - endPos) ' '
 
 
+selectOrder :: (Monad m) => m () -> m () -> Bool -> m ()
+selectOrder mA mB b = if b
+                        then mA >> mB
+                        else mB >> mA
+
+
+timeStampFormat :: String
+timeStampFormat = "[%H:%M:%S] "
+
+
+renderTimestamp :: IO (String)
+renderTimestamp =  liftM (formatTime defaultTimeLocale timeStampFormat) $ getZonedTime
+
+
+
 renderMsgType :: MessageType -> IO ()
 renderMsgType (InProgress s i) = renderInProgress s i
-renderMsgType t                = do {
-                                   putChar '[';
-                                   setSGR $ typeSGR t;
-                                   putStr $ typeText t;
-                                   setSGR [];
-                                   putChar ']'
-                                 }
+renderMsgType t                = do
+                                  putChar '['
+                                  setSGR $ typeSGR t
+                                  putStr $ typeText t
+                                  setSGR []
+                                  putChar ']'
+                                  putChar ' '
+                                 
                                 
                 
 renderInProgress :: Color -> Int -> IO ()
-renderInProgress s i = do {
-                         putChar '[';
-                         setSGR [SetColor Foreground Vivid s];
-                         putStr $ inProgressText i;
-                         setSGR [];
-                         putChar ']'
-                       }
+renderInProgress s i = do
+                        putChar '['
+                        setSGR [SetColor Foreground Vivid s]
+                        putStr $ inProgressText i
+                        setSGR []
+                        putChar ']'
+                        putChar ' '
 
                        
-postMessage :: MessageType -> String -> IO ()
-postMessage t msg = do {
-                      renderMsgType t;
-                      putChar ' ';
-                      putStrLn msg
-                    }
+postMessage :: MessageType -> Bool -> String -> IO ()
+postMessage t ts msg = do
+                        when ts $ renderTimestamp >>= putStr
+                        renderMsgType t
+                        putStrLn msg
+
                 
-updateMessage :: MessageType -> String -> IO ()
-updateMessage t msg = do {
-                        cursorUpLine 1;
-                        clearLine;
-                        postMessage t msg
-                      }
+updateMessage :: MessageType -> Bool -> String -> IO ()
+updateMessage t ts msg = do
+                          cursorUpLine 1
+                          clearLine
+                          postMessage t ts msg
+

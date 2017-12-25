@@ -29,19 +29,19 @@ startServerChecked cfg = do
                           
                           
                           
-postObserveMsg :: IO ()
-postObserveMsg = observeMsgBase postMessage 0     
+postObserveMsg :: Bool -> IO ()
+postObserveMsg b = observeMsgBase postMessage 0 b    
 
-updateObserveMsg :: Int -> IO ()
-updateObserveMsg x = observeMsgBase updateMessage x
+updateObserveMsg :: Int -> Bool -> IO ()
+updateObserveMsg x b = observeMsgBase updateMessage x b 
 
-observeMsgBase :: (MessageType -> String -> IO()) -> Int -> IO()
-observeMsgBase f x = f (InProgress Yellow x) "Observing process.."
+observeMsgBase :: (MessageType -> Bool -> String -> IO()) -> Int -> Bool -> IO()
+observeMsgBase f x b = f (InProgress Yellow x) b "Observing process.."
 
     
 observeProcess :: Configuration -> ProcessHandle -> IO ()
 observeProcess cfg ph = do
-                         postObserveMsg
+                         postObserveMsg $ printTime cfg
                          observeProcess' cfg ph 0
 
 observeProcess' :: Configuration -> ProcessHandle -> Int -> IO ()
@@ -50,7 +50,7 @@ observeProcess' cfg ph x = do
                             case ec of
                               (Just _)  -> handleTermination cfg
                               (Nothing) -> do
-                                            updateObserveMsg x
+                                            updateObserveMsg x $ printTime cfg
                                             threadDelay 100000
                                             observeProcess' cfg ph (x+1)
 
@@ -59,26 +59,26 @@ handleServerStart :: Configuration -> IO ()
 handleServerStart cfg = do
                          ph <- startServerChecked cfg
                          case ph of
-                           (Nothing) -> postMessage Failure "Failed to start server!" >> exitFailure
-                           (Just ph') -> postMessage Success "Server started" >> observeProcess cfg ph'
+                           (Nothing) -> postMessage Failure (printTime cfg) "Failed to start server!" >> exitFailure
+                           (Just ph') -> postMessage Success (printTime cfg) "Server started" >> observeProcess cfg ph'
                      
                      
 handleTermination :: Configuration -> IO ()
 handleTermination cfg = let tick x = do
                                       let msg = "Waiting " ++ show (10-(x `div` 10)) ++ "s before restarting server.."
-                                      updateMessage (InProgress Yellow x) msg
+                                      updateMessage (InProgress Yellow x) (printTime cfg) msg
                                       threadDelay 100000
                       in do
-                          updateMessage Failure "Server process terminated!"
-                          postMessage (InProgress Yellow 0) "Waiting 10s before restarting server.."
+                          updateMessage Failure (printTime  cfg) "Server process terminated!"
+                          postMessage (InProgress Yellow 0) (printTime cfg) "Waiting 10s before restarting server.."
                           sequence_ $ map tick [1..100]
-                          updateMessage Info "Server will now be restarted"
+                          updateMessage Info (printTime cfg) "Server will now be restarted"
                           handleServerStart cfg
 
 
 run :: Configuration -> IO ()
 run cfg = do
            setTitle $ "ServerWatch: " ++ serverName cfg
-           postMessage Info $ "This is ServerWatch " ++ appVersion
-           postMessage Info "Server will now be started"
+           postMessage Info (printTime cfg) $ "This is ServerWatch " ++ appVersion
+           postMessage Info (printTime cfg) "Server will now be started"
            handleServerStart cfg                          

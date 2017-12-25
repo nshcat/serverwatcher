@@ -9,14 +9,11 @@ import Data.Semigroup ((<>))
 import Version
 
 data Configuration = Configuration {
-                       serverPath  :: String
-                     , serverName  :: String
-                     , printTime   :: Bool
+                       serverPath    :: String
+                     , serverName    :: String
+                     , printTime     :: Bool
                      }
                      
-                
-defaultConfig :: Configuration
-defaultConfig = Configuration "" "" False
 
 parseArguments :: IO(Configuration)
 parseArguments = execParser opts

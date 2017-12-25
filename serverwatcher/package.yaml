@@ -24,6 +24,7 @@ dependencies:
 - ansi-terminal
 - process
 - optparse-applicative
+- time
 
 library:
   source-dirs: src
