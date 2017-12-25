@@ -77,7 +77,8 @@ handleTermination cfg = let tick x = do
 
 
 run :: Configuration -> IO ()
-run cfg = do 
+run cfg = do
+           setTitle $ "ServerWatch: " ++ serverName cfg
            postMessage Info $ "This is ServerWatch " ++ appVersion
            postMessage Info "Server will now be started"
            handleServerStart cfg                          
