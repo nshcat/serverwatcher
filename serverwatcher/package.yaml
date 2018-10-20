@@ -25,6 +25,8 @@ dependencies:
 - process
 - optparse-applicative
 - time
+- mmorph
+- mtl
 
 library:
   source-dirs: src
